@@ -9,16 +9,23 @@ const LEARNING_THRESHOLD = Number(process.env.PG_LEARNING_THRESHOLD ?? 0.55);
 const KNOWN_THRESHOLD = Number(process.env.PG_KNOWN_THRESHOLD ?? 0.78);
 
 // Enhanced learning mode - more aggressive concept detection
-let LEARNING_MODE = false;
+// Use global to persist across module reloads
+if (!global.SYNAPSE_LEARNING_MODE) {
+  global.SYNAPSE_LEARNING_MODE = true; // Default to enabled for learning sessions
+}
 
 export function enableLearningMode() {
-  LEARNING_MODE = true;
+  global.SYNAPSE_LEARNING_MODE = true;
   console.log('🎓 Learning mode enabled - aggressive concept detection active');
 }
 
 export function disableLearningMode() {
-  LEARNING_MODE = false;
+  global.SYNAPSE_LEARNING_MODE = false;
   console.log('📖 Learning mode disabled - normal concept detection');
+}
+
+export function isLearningModeEnabled() {
+  return global.SYNAPSE_LEARNING_MODE;
 }
 
 /** Load candidate concepts from DG and SG (id, label, norm_label, source_graph). */
@@ -44,7 +51,7 @@ function exactMentions(text, catalog) {
     let confidence = 0;
     let found = false;
     
-    if (LEARNING_MODE) {
+    if (global.SYNAPSE_LEARNING_MODE) {
       // In learning mode, be more aggressive about detecting mentions
       
       // Exact match (high confidence)
@@ -149,13 +156,13 @@ async function llmInferMentions(text, catalog, topicHint = '') {
 
   let systemPrompt = `Identify which of the following topic labels the learner has *demonstrated* knowledge of or *mentioned* in their message.`;
   
-  if (LEARNING_MODE) {
+  if (global.SYNAPSE_LEARNING_MODE) {
     systemPrompt = `You are in LEARNING MODE. Identify which of the following topic labels the learner has mentioned, discussed, asked about, or shown any familiarity with. Be liberal in detection - if they mention a concept even in passing, include it.`;
   }
 
   systemPrompt += `
 Return ONLY compact JSON array: [{"label":"...","confidence":0..1,"why":"..."}]
-${LEARNING_MODE ? 'In learning mode: err on the side of inclusion.' : 'Be conservative: only include labels if clearly demonstrated.'}`;
+${global.SYNAPSE_LEARNING_MODE ? 'In learning mode: err on the side of inclusion.' : 'Be conservative: only include labels if clearly demonstrated.'}`;
 
   const usr = `Topic: ${topicHint || '(unspecified)'}
 Candidate labels (subset allowed): ${topLabels}
@@ -166,7 +173,7 @@ ${text}
 
   const msg = await client.messages.create({
     model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
-    temperature: LEARNING_MODE ? 0.3 : 0.1,  // Slightly higher temperature in learning mode
+    temperature: global.SYNAPSE_LEARNING_MODE ? 0.3 : 0.1,  // Slightly higher temperature in learning mode
     max_tokens: 800,
     system: systemPrompt,
     messages: [{ role: 'user', content: usr }]
@@ -193,7 +200,7 @@ ${text}
     let conf = Number(it.confidence ?? 0.6);
     
     // In learning mode, boost confidence for any detection
-    if (LEARNING_MODE && conf > 0) {
+    if (global.SYNAPSE_LEARNING_MODE && conf > 0) {
       conf = Math.max(conf, LEARNING_THRESHOLD);
     }
     
@@ -220,7 +227,7 @@ export async function detectConceptMentions({ text, topicHint = '' }) {
   const exact = exactMentions(text, catalog);
   
   // In learning mode, always try LLM too (not just as fallback)
-  if (LEARNING_MODE) {
+  if (global.SYNAPSE_LEARNING_MODE) {
     const llm = await llmInferMentions(text, catalog, topicHint);
     
     // Combine exact and LLM results, dedup by norm_label

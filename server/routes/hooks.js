@@ -38,8 +38,7 @@ router.post('/learning-mode/disable', (req, res) => {
 // Get current learning mode status
 router.get('/learning-mode/status', (req, res) => {
   try {
-    // You'll need to export the LEARNING_MODE state from extract.js
-    res.json({ 
+    res.json({
       ok: true,
       learning_mode: global.SYNAPSE_LEARNING_MODE || false
     });
