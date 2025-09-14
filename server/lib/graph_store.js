@@ -2,6 +2,7 @@ import { getDB } from './db.js';
 import { parseMermaid, normalizeLabel } from './mermaid.js';
 import { insertSnapshot } from './dao.js';
 
+
 function upsertConcept(db, { label, source_graph, description = null, provenance = null }) {
   const norm = normalizeLabel(label);
   const sel = db.prepare(

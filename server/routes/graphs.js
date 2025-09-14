@@ -3,6 +3,7 @@ import { getLatestSnapshotsAll, countNodesFromMermaid } from '../lib/dao.js';
 import { countOverlaps } from '../lib/align.js';
 import { countOverlapsAligned } from '../lib/align.js';
 import { nextUp } from '../lib/recommend.js';
+import { getDB } from '../lib/db.js';
 
 const router = Router();
 
@@ -20,6 +21,49 @@ function countAssessedFromSG(mermaidText) {
   return n;
 }
 
+function getCrossGraphMastery() {
+  const db = getDB();
+
+  try {
+    // Optimized single query with indexes - no caching
+    const alignedMastery = db.prepare(`
+      SELECT
+        domain_c.norm_label as norm_label,
+        domain_c.source_graph as source_graph,
+        p.mastery as mastery
+      FROM alignments a
+      JOIN concepts personal_c ON personal_c.id = a.b_id AND personal_c.source_graph = 'personal'
+      JOIN concepts domain_c ON domain_c.id = a.a_id AND domain_c.source_graph IN ('domain', 'syllabus')
+      JOIN progress p ON p.concept_id = personal_c.id AND p.mastery IN ('learning', 'known')
+      WHERE a.method = 'exact' AND a.confidence >= 0.8
+
+      UNION
+
+      SELECT
+        domain_c.norm_label as norm_label,
+        domain_c.source_graph as source_graph,
+        p.mastery as mastery
+      FROM alignments a
+      JOIN concepts personal_c ON personal_c.id = a.a_id AND personal_c.source_graph = 'personal'
+      JOIN concepts domain_c ON domain_c.id = a.b_id AND domain_c.source_graph IN ('domain', 'syllabus')
+      JOIN progress p ON p.concept_id = personal_c.id AND p.mastery IN ('learning', 'known')
+      WHERE a.method = 'exact' AND a.confidence >= 0.8
+    `).all();
+
+    const result = { domain: {}, syllabus: {} };
+
+    // Group by source_graph for fast lookup
+    alignedMastery.forEach(row => {
+      result[row.source_graph][row.norm_label] = row.mastery;
+    });
+
+    return result;
+  } catch (error) {
+    console.warn('getCrossGraphMastery error:', error);
+    return { domain: {}, syllabus: {} };
+  }
+}
+
 router.get('/graphs', (req, res) => {
   res.set('Cache-Control', 'no-store');  
   const mermaid = getLatestSnapshotsAll();
@@ -34,6 +78,7 @@ router.get('/graphs', (req, res) => {
 
   const overlaps_raw = countOverlaps();              // set-intersection (norm/singular)
   const overlaps_aligned = countOverlapsAligned();
+  const crossGraphMastery = getCrossGraphMastery();
 
   res.json({
     mermaid: { dg, sg, pg },
@@ -45,6 +90,7 @@ router.get('/graphs', (req, res) => {
       overlaps_raw,                    // still available if you want to compare
       assessed_sg: countAssessedFromSG(sg)
     },
+    mastery: crossGraphMastery,         // Cross-graph mastery synchronization data
     recommendations: nextUp(5)
   });
 });

@@ -1,11 +1,12 @@
 {
+  "enableAllProjectMcpServers": true,
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/synapse_init.py"
+            "command": "python3 /Users/leahuriarte/synapse/.claude/hooks/synapse_init.py"
           }
         ]
       }
@@ -16,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/synapse_init.py"
+            "command": "python3 /Users/leahuriarte/synapse/.claude/hooks/synapse_init.py"
           }
         ]
       }

@@ -6,6 +6,7 @@
 """
 Synapse Auto-Initialization Hook for Claude Code
 Automatically sets up domain/syllabus graphs and enables chat tracking.
+Enhanced for seamless Claude Code integration with persistent sessions.
 """
 
 import json
@@ -15,6 +16,7 @@ import urllib.error
 from datetime import datetime
 from pathlib import Path
 import re
+import os
 
 def call_synapse_api(endpoint, data=None, method='GET'):
     """Call Synapse API with error handling."""
@@ -78,43 +80,105 @@ def extract_subject_from_prompt(prompt):
     
     return None
 
+def get_session_state():
+    """Get current session state from persistent storage."""
+    session_file = Path.cwd() / '.claude' / 'synapse_session.json'
+    if session_file.exists():
+        try:
+            with open(session_file, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return {'initialized': False, 'subject': None, 'session_id': None}
+
+def save_session_state(state):
+    """Save session state to persistent storage."""
+    session_file = Path.cwd() / '.claude' / 'synapse_session.json'
+    session_file.parent.mkdir(exist_ok=True)
+    with open(session_file, 'w') as f:
+        json.dump(state, f, indent=2)
+
+def ensure_synapse_server():
+    """Ensure Synapse server is running, start if needed."""
+    health = call_synapse_api('/health')
+    if health and health.get('ok'):
+        return True
+
+    print(f"🚀 Starting Synapse server...", file=sys.stderr)
+    import subprocess
+    import time
+
+    try:
+        # Start server in background
+        subprocess.Popen(['npm', 'start'], cwd=Path.cwd(),
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        # Wait for server to start
+        for i in range(10):
+            time.sleep(1)
+            health = call_synapse_api('/health')
+            if health and health.get('ok'):
+                print(f"✅ Synapse server started", file=sys.stderr)
+                return True
+
+        print(f"❌ Failed to start Synapse server", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"❌ Error starting server: {e}", file=sys.stderr)
+        return False
+
 def initialize_synapse_session(prompt, subject):
     """Initialize complete Synapse session."""
+    session_state = get_session_state()
+
+    # Check if already initialized for this subject
+    if session_state.get('initialized') and session_state.get('subject') == subject:
+        print(f"🎓 Synapse already active for: {subject}", file=sys.stderr)
+        return True
+
     print(f"\n🎓 Synapse Learning System Initializing...", file=sys.stderr)
     print(f"📖 Subject: {subject}", file=sys.stderr)
     print(f"📊 Monitor: http://localhost:3001", file=sys.stderr)
-    
-    # Check if server is running
-    health = call_synapse_api('/health')
-    if not health or not health.get('ok'):
-        print(f"❌ Synapse server not running. Please start with: npm start", file=sys.stderr)
+
+    # Ensure server is running
+    if not ensure_synapse_server():
         return False
-    
+
     # Build domain graph
     print(f"🧠 Building domain knowledge graph...", file=sys.stderr)
     result = call_synapse_api('/graph/domain/build', {'topic': subject}, 'POST')
-    
+
     if not result or not result.get('ok'):
         print(f"✗ Domain graph building failed", file=sys.stderr)
         return False
-    
+
     # Try syllabus graph
     print(f"📚 Building syllabus graph...", file=sys.stderr)
     call_synapse_api('/ingest/fallback/syllabus/discrete', {}, 'POST')
-    
+
     # Run alignments
     print(f"🔗 Computing knowledge overlaps...", file=sys.stderr)
     call_synapse_api('/align/embedding', {}, 'POST')
-    
+
+    # Save session state
+    session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    save_session_state({
+        'initialized': True,
+        'subject': subject,
+        'session_id': session_id,
+        'started_at': datetime.now().isoformat()
+    })
+
     # Send initial tracking
     call_synapse_api('/hooks/chat', {
         'role': 'user',
         'text': prompt,
         'topicHint': subject,
         'workspace': Path.cwd().name,
+        'session_id': session_id,
         'timestamp': datetime.now().isoformat()
     }, 'POST')
-    
+
     print(f"🚀 Synapse ready! Learning will be tracked automatically.", file=sys.stderr)
     return True
 

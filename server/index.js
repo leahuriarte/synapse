@@ -12,6 +12,7 @@ import canvasRoutes from './routes/canvas.js';
 import { initDbPragmas } from './lib/dao.js';
 import hooksRoutes from './routes/hooks.js';
 import fallbackRoutes from './routes/fallback.js';
+import apiRoutes from './routes/api.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +32,7 @@ app.use(sessionRoutes);
 app.use(domainRoutes);
 app.use(hooksRoutes);
 app.use(fallbackRoutes);
+app.use(apiRoutes);
 
 const webDir = path.resolve(__dirname, '../web');
 app.use(express.static(webDir));

@@ -63,8 +63,13 @@ export function applyEvidenceAndRebuildPG({ hits }) {
   try {
     for (const h of hits) {
       // fetch the canonical label for the mentioned concept id
-      const c = db.prepare(`SELECT id, label, norm_label FROM concepts WHERE id = ?`).get(h.concept_id);
+      const c = db.prepare(`SELECT id, label, norm_label, provenance FROM concepts WHERE id = ?`).get(h.concept_id);
       if (!c) continue;
+
+      // Filter out structural course elements that shouldn't be in personal graph
+      if (shouldFilterFromPersonalGraph(c)) {
+        continue;
+      }
 
       const pId = upsertPersonalConcept(db, c.label);
       personalConceptIds.push(pId);
@@ -222,6 +227,42 @@ export function applyEvidenceAndRebuildPG({ hits }) {
   }
 }
 
+/** Filter out structural course elements that shouldn't appear in personal graph */
+function shouldFilterFromPersonalGraph(concept) {
+  const label = concept.label?.toLowerCase() || '';
+
+  // Filter out course structure elements
+  if (label.startsWith('module:') ||
+      label.startsWith('page:') ||
+      label.startsWith('file:') ||
+      label.startsWith('assignment:') ||
+      label.startsWith('outcome:') ||
+      label.startsWith('course:')) {
+    return true;
+  }
+
+  // Filter based on provenance (syllabus structure elements)
+  if (concept.provenance) {
+    try {
+      const prov = JSON.parse(concept.provenance);
+      if (prov.type === 'module_item' ||
+          prov.type === 'page' ||
+          prov.type === 'page_heading' ||
+          prov.type === 'assignment' ||
+          prov.type === 'outcome' ||
+          prov.type === 'file' ||
+          prov.type === 'file_page') {
+        return true;
+      }
+    } catch {
+      // Invalid JSON, continue with label-based filtering
+    }
+  }
+
+  return false;
+}
+
 function escapeLabel(s) {
   return String(s).replace(/"/g, '\\"');
 }
+

@@ -1,0 +1,26 @@
+{
+  "name": "synapse-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Synapse learning system integration with Claude Code",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "synapse-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "synapse": {
+      "command": "node",
+      "args": ["/Users/leahuriarte/synapse/mcp/dist/index.js"],
+      "env": {
+        "SYNAPSE_URL": "http://localhost:3001"
+      }
+    }
+  }
+}
