@@ -82,9 +82,10 @@ async function createFallbackSyllabus() {
 function startServer() {
   return new Promise((resolve) => {
     console.log('🚀 Starting Synapse server...');
-    const serverProcess = spawn('npm', ['start'], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: true
+    const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    const serverProcess = spawn(npmCmd, ['start'], {
+      stdio: 'inherit',
+      shell: true
     });
 
     let serverReady = false;
@@ -98,21 +99,7 @@ function startServer() {
       }
     };
 
-    // Start checking after a brief delay
     setTimeout(checkHealth, 2000);
-
-    // Handle server output
-    serverProcess.stdout.on('data', (data) => {
-      if (!serverReady) {
-        process.stdout.write(`[server] ${data}`);
-      }
-    });
-
-    serverProcess.stderr.on('data', (data) => {
-      if (!serverReady) {
-        process.stderr.write(`[server] ${data}`);
-      }
-    });
   });
 }
 
@@ -127,17 +114,18 @@ async function setupLearningSession() {
       // Run database migration first
       console.log('🔧 Initializing database...');
       try {
-        const { spawn } = await import('child_process');
-        const migrate = spawn('npm', ['run', 'db:migrate'], { stdio: 'inherit' });
-        await new Promise((resolve, reject) => {
-          migrate.on('close', (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`Migration failed with code ${code}`));
-          });
+      const { spawn } = await import('child_process');
+      const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+      const migrate = spawn(npmCmd, ['run', 'db:migrate'], { stdio: 'inherit' });
+      await new Promise((resolve, reject) => {
+        migrate.on('close', (code) => {
+          if (code === 0) resolve();
+          else reject(new Error(`Migration failed with code ${code}`));
         });
-        console.log('✅ Database ready');
+      });
+      console.log('✅ Database ready');
       } catch (e) {
-        console.log('⚠️  Database migration failed, continuing anyway');
+      console.log('⚠️  Database migration failed, continuing anyway');
       }
 
       await startServer();
