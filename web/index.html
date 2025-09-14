@@ -221,13 +221,17 @@
 
     .graph-content {
       position: relative;
-      min-height: 300px;
+      min-height: 500px;
+      max-height: 600px;
       background: var(--bg-primary);
       border-radius: var(--radius-sm);
-      padding: 16px;
+      padding: 20px;
       overflow: auto;
       cursor: pointer;
       transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .graph-content:hover {
@@ -474,6 +478,27 @@
       .recommendation-item {
         padding: 12px;
       }
+
+      .graph-content {
+        min-height: 400px;
+        max-height: 500px;
+        padding: 16px;
+      }
+
+      .graph-modal-content {
+        width: 98%;
+        height: 98%;
+        max-width: 100vw;
+        max-height: 100vh;
+      }
+
+      .graph-modal-body {
+        padding: 10px;
+      }
+
+      .interactive-graph {
+        min-height: 400px;
+      }
     }
 
     /* Mermaid overrides */
@@ -489,7 +514,7 @@
       background: transparent !important;
     }
 
-    /* Mermaid dark theme styling */
+    /* Mermaid dark theme styling with consistent spacing */
     .mermaid .node rect,
     .mermaid .node circle,
     .mermaid .node polygon {
@@ -502,6 +527,7 @@
       fill: var(--text-primary) !important;
       font-family: 'Inter', sans-serif !important;
       font-weight: 500 !important;
+      font-size: 12px !important; /* Consistent 12pt font size */
     }
 
     .mermaid .edgePath path {
@@ -518,9 +544,25 @@
       background-color: var(--bg-secondary) !important;
       color: var(--text-secondary) !important;
       font-family: 'Inter', sans-serif !important;
-      font-size: 12px !important;
+      font-size: 11px !important;
       padding: 2px 6px !important;
       border-radius: 4px !important;
+    }
+
+    /* Enhanced spacing for better vertical layout */
+    .mermaid svg {
+      font-size: 12px !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+
+    .mermaid .node {
+      margin: 10px 5px !important;
+    }
+
+    /* Ensure consistent text rendering across all graphs */
+    .mermaid text {
+      font-size: 12px !important;
+      font-family: 'Inter', sans-serif !important;
     }
 
     /* Tooltips */
@@ -604,10 +646,10 @@
       background: var(--bg-secondary);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      width: 90%;
-      height: 90%;
-      max-width: 1200px;
-      max-height: 800px;
+      width: 95%;
+      height: 95%;
+      max-width: 1400px;
+      max-height: 900px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -653,9 +695,11 @@
 
     .graph-modal-body {
       flex: 1;
-      padding: 24px;
-      overflow: auto;
+      padding: 20px;
+      overflow: hidden;
       background: var(--bg-primary);
+      position: relative;
+      min-height: 0; /* Important for flex child to shrink */
     }
 
     .graph-modal-graph {
@@ -664,6 +708,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     .graph-modal-graph .mermaid {
@@ -675,6 +720,87 @@
       width: 100% !important;
       height: auto !important;
       min-height: 100%;
+      cursor: grab;
+      transition: transform 0.1s ease;
+    }
+
+    .graph-modal-graph .mermaid svg:active {
+      cursor: grabbing;
+    }
+
+    /* Interactive controls */
+    .graph-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .graph-control-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      border: 1px solid var(--border);
+    }
+
+    .graph-control-btn:hover {
+      background: var(--primary);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .graph-control-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Interactive graph container */
+    .interactive-graph-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-primary);
+      border-radius: var(--radius-sm);
+    }
+
+    .interactive-graph {
+      transform-origin: center center;
+      transition: transform 0.1s ease;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 600px; /* Ensure minimum height for large graphs */
+    }
+
+    .interactive-graph .mermaid {
+      width: 100%;
+      height: auto;
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .interactive-graph .mermaid svg {
+      width: auto !important;
+      height: auto !important;
+      max-width: none !important;
+      max-height: none !important;
     }
 
     /* Click to expand hint */
@@ -695,6 +821,205 @@
 
     .graph-content:hover::after {
       opacity: 1;
+    }
+
+    /* Graph Thumbnail Styling */
+    .graph-thumbnail {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+      transition: all 0.3s ease;
+    }
+
+    .graph-thumbnail:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+    }
+
+    .thumbnail-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .thumbnail-wrapper svg {
+      width: auto !important;
+      height: auto !important;
+      max-width: none;
+      max-height: none;
+      transition: transform 0.3s ease;
+    }
+
+    .thumbnail-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.3));
+      padding: 16px;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .graph-thumbnail:hover .thumbnail-overlay {
+      opacity: 1;
+    }
+
+    .thumbnail-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      font-size: 14px;
+    }
+
+    .thumbnail-nodes {
+      background: rgba(255, 255, 255, 0.25);
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .thumbnail-action {
+      font-weight: 600;
+      opacity: 1;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Enhanced graph content styling for thumbnails */
+    .graph-content .graph-thumbnail {
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .graph-content:hover .graph-thumbnail {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Specific styling for different graph types */
+    .graph-card:nth-child(1) .graph-thumbnail {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+
+    .graph-card:nth-child(1):hover .graph-thumbnail {
+      border-color: #3b82f6;
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.6), 0 12px 35px rgba(0, 0, 0, 0.25);
+      transform: scale(1.08);
+    }
+
+    .graph-card:nth-child(2) .graph-thumbnail {
+      background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 50%, #3b1e78 100%);
+    }
+
+    .graph-card:nth-child(2):hover .graph-thumbnail {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 12px 35px rgba(0, 0, 0, 0.25);
+      transform: scale(1.08);
+    }
+
+    .graph-card:nth-child(3) .graph-thumbnail {
+      background: linear-gradient(135deg, #1a1a2e 0%, #134e4a 50%, #065f46 100%);
+    }
+
+    .graph-card:nth-child(3):hover .graph-thumbnail {
+      border-color: #10b981;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), 0 12px 35px rgba(0, 0, 0, 0.25);
+      transform: scale(1.08);
+    }
+
+    /* Graph type indicators */
+    .graph-thumbnail::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      z-index: 3;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .graph-card:nth-child(1) .graph-thumbnail::before {
+      background: #3b82f6;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+    }
+
+    .graph-card:nth-child(2) .graph-thumbnail::before {
+      background: #8b5cf6;
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+    }
+
+    .graph-card:nth-child(3) .graph-thumbnail::before {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    /* Fallback thumbnail styling */
+    .graph-thumbnail.fallback {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border: 2px dashed var(--border);
+    }
+
+    .fallback-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      color: var(--text-secondary);
+    }
+
+    .fallback-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.7;
+    }
+
+    .fallback-text {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .fallback-subtext {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* Thumbnail loading animation */
+    .thumbnail-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+
+    .thumbnail-loading::after {
+      content: '';
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
 
     /* Loading state improvements */
@@ -834,7 +1159,16 @@
       </div>
       <div class="graph-modal-body">
         <div id="graph-modal-graph" class="graph-modal-graph">
-          <div class="mermaid"></div>
+          <div class="interactive-graph-container">
+            <div class="graph-controls">
+              <button id="zoom-in" class="graph-control-btn" title="Zoom In">+</button>
+              <button id="zoom-out" class="graph-control-btn" title="Zoom Out">−</button>
+              <button id="reset-view" class="graph-control-btn" title="Reset View">⌂</button>
+            </div>
+            <div id="interactive-graph" class="interactive-graph">
+              <div class="mermaid"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

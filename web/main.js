@@ -7,7 +7,11 @@ mermaid.initialize({
   flowchart: {
     useMaxWidth: true,
     htmlLabels: true,
-    curve: 'basis'
+    curve: 'basis',
+    rankDir: 'TD', // Top to bottom for better vertical spacing
+    nodeSpacing: 80, // Increased horizontal spacing between nodes
+    rankSpacing: 100, // Increased vertical spacing between ranks
+    diagramPadding: 20 // Padding around the diagram
   },
   themeVariables: {
     primaryColor: '#6366f1',
@@ -19,7 +23,11 @@ mermaid.initialize({
     background: 'transparent',
     mainBkg: '#1a1a2e',
     secondBkg: '#16213e',
-    darkMode: true
+    darkMode: true,
+    // Consistent font sizing across all graphs
+    primaryTextColor: '#f8fafc',
+    fontSize: '12px',
+    fontFamily: 'Inter, system-ui, sans-serif'
   }
 });
 
@@ -53,6 +61,22 @@ const graphModal = document.getElementById('graph-modal');
 const graphModalTitle = document.getElementById('graph-modal-title');
 const graphModalClose = document.getElementById('graph-modal-close');
 const graphModalGraph = document.getElementById('graph-modal-graph');
+
+// Interactive graph elements
+const interactiveGraph = document.getElementById('interactive-graph');
+const zoomInBtn = document.getElementById('zoom-in');
+const zoomOutBtn = document.getElementById('zoom-out');
+const resetViewBtn = document.getElementById('reset-view');
+
+// Interactive state
+let graphState = {
+  scale: 1,
+  translateX: 0,
+  translateY: 0,
+  isDragging: false,
+  lastX: 0,
+  lastY: 0
+};
 
 // Animation utilities
 function fadeIn(element, duration = 300) {
@@ -115,7 +139,7 @@ function animateCount(element, newValue) {
   }
 }
 
-async function showGraph(loadingElement, graphElement, mermaidContent) {
+async function showGraph(loadingElement, graphElement, mermaidContent, showThumbnail = false) {
   if (mermaidContent && mermaidContent !== 'graph TD; X["booting…"]' && mermaidContent.trim() !== '') {
     fadeOut(loadingElement);
     
@@ -128,11 +152,95 @@ async function showGraph(loadingElement, graphElement, mermaidContent) {
       
       // Use mermaid.render to convert text to SVG
       const { svg } = await mermaid.render(graphId, mermaidContent);
-      graphElement.innerHTML = svg;
+      
+      if (showThumbnail) {
+        // Create a thumbnail container with enhanced styling (only for personal graph)
+        const thumbnailContainer = document.createElement('div');
+        thumbnailContainer.className = 'graph-thumbnail';
+        
+        // Add a thumbnail wrapper for better control
+        const thumbnailWrapper = document.createElement('div');
+        thumbnailWrapper.className = 'thumbnail-wrapper';
+        thumbnailWrapper.innerHTML = svg;
+        
+        // Scale and position the SVG for optimal thumbnail view
+        const svgElement = thumbnailWrapper.querySelector('svg');
+        if (svgElement) {
+          // Get original dimensions
+          const bbox = svgElement.getBBox();
+          const originalWidth = bbox.width;
+          const originalHeight = bbox.height;
+          
+          // Calculate consistent scale for thumbnail (consistent 12pt font equivalent)
+          const containerWidth = 450; // Container width
+          const containerHeight = 450; // Container height
+          
+          // Target a consistent scale that makes text approximately 12pt
+          // This ensures all graphs have similar readability regardless of size
+          const targetScale = 0.85; // Consistent scale for 12pt font equivalent
+          
+          // Calculate scale based on container, but prioritize consistency
+          const scaleX = containerWidth / originalWidth;
+          const scaleY = containerHeight / originalHeight;
+          const fitScale = Math.min(scaleX, scaleY);
+          
+          // Use target scale, but don't exceed container bounds
+          const optimalScale = Math.min(targetScale, fitScale);
+          
+          svgElement.style.transform = `scale(${optimalScale})`;
+          svgElement.style.transformOrigin = 'center center';
+          svgElement.style.maxWidth = 'none';
+          svgElement.style.maxHeight = 'none';
+          svgElement.style.width = 'auto';
+          svgElement.style.height = 'auto';
+          
+          // Add subtle shadow and border for thumbnail effect
+          svgElement.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))';
+          svgElement.style.borderRadius = '4px';
+        }
+        
+        thumbnailContainer.appendChild(thumbnailWrapper);
+        
+        // Add thumbnail overlay with info
+        const thumbnailOverlay = document.createElement('div');
+        thumbnailOverlay.className = 'thumbnail-overlay';
+        thumbnailOverlay.innerHTML = `
+          <div class="thumbnail-info">
+            <span class="thumbnail-nodes">${countNodesInMermaid(mermaidContent)} nodes</span>
+            <span class="thumbnail-action">Click to explore</span>
+          </div>
+        `;
+        thumbnailContainer.appendChild(thumbnailOverlay);
+        
+        graphElement.appendChild(thumbnailContainer);
+      } else {
+        // For non-thumbnail graphs, display the SVG directly
+        const graphWrapper = document.createElement('div');
+        graphWrapper.className = 'mermaid';
+        graphWrapper.innerHTML = svg;
+        graphElement.appendChild(graphWrapper);
+      }
     } catch (error) {
       console.warn('Mermaid render error:', error);
-      // Fallback to text display if rendering fails
-      graphElement.innerHTML = `<pre style="color: var(--text-muted); font-size: 12px; overflow: auto;">${mermaidContent}</pre>`;
+      if (showThumbnail) {
+        // Fallback to a styled placeholder thumbnail
+        const fallbackContainer = document.createElement('div');
+        fallbackContainer.className = 'graph-thumbnail fallback';
+        fallbackContainer.innerHTML = `
+          <div class="fallback-content">
+            <div class="fallback-icon">📊</div>
+            <div class="fallback-text">Graph Preview</div>
+            <div class="fallback-subtext">${countNodesInMermaid(mermaidContent)} nodes</div>
+          </div>
+        `;
+        graphElement.appendChild(fallbackContainer);
+      } else {
+        // Fallback for non-thumbnail graphs
+        const fallbackWrapper = document.createElement('div');
+        fallbackWrapper.className = 'mermaid';
+        fallbackWrapper.innerHTML = `<pre style="color: var(--text-muted); font-size: 14px; white-space: pre-wrap;">${mermaidContent}</pre>`;
+        graphElement.appendChild(fallbackWrapper);
+      }
     }
     
     fadeIn(graphElement);
@@ -140,6 +248,12 @@ async function showGraph(loadingElement, graphElement, mermaidContent) {
     fadeOut(graphElement);
     fadeIn(loadingElement);
   }
+}
+
+// Helper function to count nodes in mermaid text
+function countNodesInMermaid(mermaidText) {
+  const nodeMatches = mermaidText.match(/\w+\["[^"]+"\]/g) || [];
+  return nodeMatches.length;
 }
 
 function updateRecommendations(recommendations) {
@@ -205,9 +319,9 @@ async function poll() {
   const { mermaid: mm } = data || {};
   if (mm) {
     await Promise.all([
-      showGraph(dgLoading, dgGraph, mm.dg),
-      showGraph(sgLoading, sgGraph, mm.sg),
-      showGraph(pgLoading, pgGraph, mm.pg)
+      showGraph(dgLoading, dgGraph, mm.dg, false), // Domain graph - no thumbnail
+      showGraph(sgLoading, sgGraph, mm.sg, false), // Syllabus graph - no thumbnail
+      showGraph(pgLoading, pgGraph, mm.pg, true)   // Personal graph - with thumbnail
     ]);
   }
 
@@ -236,28 +350,189 @@ function closeGraphModal() {
   document.body.style.overflow = '';
   
   // Clear modal content
-  const modalMermaid = graphModalGraph.querySelector('.mermaid');
+  const modalMermaid = interactiveGraph.querySelector('.mermaid');
   if (modalMermaid) {
     modalMermaid.innerHTML = '';
   }
+  
+  // Reset graph state
+  resetGraphState();
 }
 
 async function renderModalGraph(mermaidContent) {
-  const modalMermaid = graphModalGraph.querySelector('.mermaid');
+  const modalMermaid = interactiveGraph.querySelector('.mermaid');
   if (!modalMermaid) return;
+  
+  // Reset graph state
+  resetGraphState();
   
   try {
     const graphId = `modal-graph-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const { svg } = await mermaid.render(graphId, mermaidContent);
     modalMermaid.innerHTML = svg;
+    
+    // Ensure SVG scales properly in modal with consistent font size
+    const svgElement = modalMermaid.querySelector('svg');
+    if (svgElement) {
+      svgElement.style.width = 'auto';
+      svgElement.style.height = 'auto';
+      svgElement.style.maxWidth = 'none';
+      svgElement.style.maxHeight = 'none';
+      svgElement.style.fontSize = '12px'; // Consistent font size in modal
+      
+      // Get the actual SVG dimensions
+      const bbox = svgElement.getBBox();
+      if (bbox.width && bbox.height) {
+        // Set viewBox to ensure complete graph is visible with padding
+        const padding = 20;
+        const viewBoxX = bbox.x - padding;
+        const viewBoxY = bbox.y - padding;
+        const viewBoxWidth = bbox.width + (padding * 2);
+        const viewBoxHeight = bbox.height + (padding * 2);
+        
+        svgElement.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+        svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      }
+      
+      // Ensure all text elements have consistent sizing
+      const textElements = svgElement.querySelectorAll('text');
+      textElements.forEach(text => {
+        text.style.fontSize = '12px';
+        text.style.fontFamily = 'Inter, sans-serif';
+      });
+    }
+    
+    // Setup interactive features after rendering
+    setupInteractiveGraph();
   } catch (error) {
     console.warn('Modal mermaid render error:', error);
     modalMermaid.innerHTML = `<pre style="color: var(--text-muted); font-size: 14px; white-space: pre-wrap;">${mermaidContent}</pre>`;
   }
 }
 
+// Interactive graph functions
+function updateGraphTransform() {
+  const transform = `translate(${graphState.translateX}px, ${graphState.translateY}px) scale(${graphState.scale})`;
+  interactiveGraph.style.transform = transform;
+}
+
+function resetGraphState() {
+  graphState = {
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+    isDragging: false,
+    lastX: 0,
+    lastY: 0
+  };
+  updateGraphTransform();
+}
+
+function zoomGraph(factor) {
+  const newScale = Math.max(0.1, Math.min(5, graphState.scale * factor));
+  graphState.scale = newScale;
+  updateGraphTransform();
+}
+
+function setupInteractiveGraph() {
+  const svg = interactiveGraph.querySelector('svg');
+  if (!svg) return;
+
+  // Mouse wheel zoom
+  interactiveGraph.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+    zoomGraph(zoomFactor);
+  });
+
+  // Mouse drag to pan
+  interactiveGraph.addEventListener('mousedown', (e) => {
+    graphState.isDragging = true;
+    graphState.lastX = e.clientX;
+    graphState.lastY = e.clientY;
+    interactiveGraph.style.cursor = 'grabbing';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (graphState.isDragging) {
+      const deltaX = e.clientX - graphState.lastX;
+      const deltaY = e.clientY - graphState.lastY;
+      
+      graphState.translateX += deltaX;
+      graphState.translateY += deltaY;
+      graphState.lastX = e.clientX;
+      graphState.lastY = e.clientY;
+      
+      updateGraphTransform();
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    graphState.isDragging = false;
+    interactiveGraph.style.cursor = 'grab';
+  });
+
+  // Touch support for mobile
+  let lastTouchDistance = 0;
+  
+  interactiveGraph.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      graphState.isDragging = true;
+      graphState.lastX = e.touches[0].clientX;
+      graphState.lastY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      lastTouchDistance = Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+        Math.pow(touch2.clientY - touch1.clientY, 2)
+      );
+    }
+  });
+
+  interactiveGraph.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    
+    if (e.touches.length === 1 && graphState.isDragging) {
+      const deltaX = e.touches[0].clientX - graphState.lastX;
+      const deltaY = e.touches[0].clientY - graphState.lastY;
+      
+      graphState.translateX += deltaX;
+      graphState.translateY += deltaY;
+      graphState.lastX = e.touches[0].clientX;
+      graphState.lastY = e.touches[0].clientY;
+      
+      updateGraphTransform();
+    } else if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const currentDistance = Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+        Math.pow(touch2.clientY - touch1.clientY, 2)
+      );
+      
+      if (lastTouchDistance > 0) {
+        const zoomFactor = currentDistance / lastTouchDistance;
+        zoomGraph(zoomFactor);
+      }
+      
+      lastTouchDistance = currentDistance;
+    }
+  });
+
+  interactiveGraph.addEventListener('touchend', () => {
+    graphState.isDragging = false;
+    lastTouchDistance = 0;
+  });
+}
+
 // Event listeners
 graphModalClose.addEventListener('click', closeGraphModal);
+
+// Zoom control event listeners
+zoomInBtn.addEventListener('click', () => zoomGraph(1.2));
+zoomOutBtn.addEventListener('click', () => zoomGraph(0.8));
+resetViewBtn.addEventListener('click', resetGraphState);
 
 // Close modal on backdrop click
 graphModal.addEventListener('click', (e) => {
