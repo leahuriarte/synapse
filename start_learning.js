@@ -124,6 +124,22 @@ async function setupLearningSession() {
     let serverRunning = await checkServerHealth();
 
     if (!serverRunning) {
+      // Run database migration first
+      console.log('🔧 Initializing database...');
+      try {
+        const { spawn } = await import('child_process');
+        const migrate = spawn('npm', ['run', 'db:migrate'], { stdio: 'inherit' });
+        await new Promise((resolve, reject) => {
+          migrate.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`Migration failed with code ${code}`));
+          });
+        });
+        console.log('✅ Database ready');
+      } catch (e) {
+        console.log('⚠️  Database migration failed, continuing anyway');
+      }
+
       await startServer();
       serverRunning = await checkServerHealth();
     } else {
