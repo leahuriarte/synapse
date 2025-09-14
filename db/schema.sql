@@ -1,5 +1,5 @@
 PRAGMA foreign_keys = ON;
-PRAGMA journal_mode = WAL;
+-- #PRAGMA journal_mode = WAL;
 PRAGMA user_version = 3;
 
 
