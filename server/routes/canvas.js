@@ -6,10 +6,11 @@ import {
   getAssignments,
   getOutcomeGroups,
   getOutcomesInGroup,
-  getFileById,  
+  getFileById,
   getPage,
   getFiles,
-  downloadFile
+  downloadFile,
+  getCourses
 } from '../connectors/canvas.js';
 import { buildSyllabusMermaid } from '../lib/sg_builder.js';
 import { ingestSyllabusMermaid } from '../lib/graph_store.js';
@@ -111,6 +112,25 @@ router.post('/ingest/canvas/:courseId', async (req, res) => {
     });
   } catch (e) {
     console.error('[ingest/canvas]', e);
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+router.get('/canvas/courses', async (req, res) => {
+  try {
+    const courses = await getCourses();
+    res.json({
+      ok: true,
+      courses: courses.map(course => ({
+        id: course.id,
+        name: course.name,
+        course_code: course.course_code,
+        enrollment_term_id: course.enrollment_term_id,
+        workflow_state: course.workflow_state
+      }))
+    });
+  } catch (e) {
+    console.error('[canvas/courses]', e);
     res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
 });

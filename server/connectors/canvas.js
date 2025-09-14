@@ -96,3 +96,12 @@ export async function getPage(courseId, pageUrl) {
   if (!r.ok) throw new Error(`Canvas ${r.status} ${url}`);
   return r.json(); // { title, body, html_url, ... }
 }
+
+export async function getCourses() {
+  try {
+    return fetchAll(`${BASE}/api/v1/courses?enrollment_state=active&per_page=100`);
+  } catch (e) {
+    console.warn('Failed to fetch Canvas courses:', e.message);
+    return [];
+  }
+}

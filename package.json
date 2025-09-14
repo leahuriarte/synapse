@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon server/index.js",
     "start": "node server/index.js",
+    "learn": "node start_learning.js",
     "db:migrate": "node db/migrate.js",
     "db:seed": "node db/seed.js"
   },
