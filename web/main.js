@@ -139,7 +139,7 @@ function animateCount(element, newValue) {
   }
 }
 
-async function showGraph(loadingElement, graphElement, mermaidContent, showThumbnail = false) {
+async function showGraph(loadingElement, graphElement, mermaidContent, showThumbnail = false, graphType = null) {
   if (mermaidContent && mermaidContent !== 'graph TD; X["booting…"]' && mermaidContent.trim() !== '') {
     fadeOut(loadingElement);
     
@@ -212,12 +212,20 @@ async function showGraph(loadingElement, graphElement, mermaidContent, showThumb
         `;
         thumbnailContainer.appendChild(thumbnailOverlay);
         
+        // Apply graph-specific colors to thumbnail
+        applyGraphTypeColors(svgElement, graphType);
+        
         graphElement.appendChild(thumbnailContainer);
       } else {
         // For non-thumbnail graphs, display the SVG directly
         const graphWrapper = document.createElement('div');
         graphWrapper.className = 'mermaid';
         graphWrapper.innerHTML = svg;
+        
+        // Apply graph-specific colors to direct SVG
+        const svgElement = graphWrapper.querySelector('svg');
+        applyGraphTypeColors(svgElement, graphType);
+        
         graphElement.appendChild(graphWrapper);
       }
     } catch (error) {
@@ -248,6 +256,37 @@ async function showGraph(loadingElement, graphElement, mermaidContent, showThumb
     fadeOut(graphElement);
     fadeIn(loadingElement);
   }
+}
+
+// Helper function to apply graph-specific node colors
+function applyGraphTypeColors(svgElement, graphType) {
+  if (!svgElement || !graphType) return;
+  
+  const nodes = svgElement.querySelectorAll('g.node rect, g.node circle, g.node polygon');
+  
+  let nodeColor, borderColor;
+  switch (graphType) {
+    case 'domain':
+      nodeColor = '#fef3c7'; // Light yellow
+      borderColor = '#f59e0b'; // Yellow
+      break;
+    case 'syllabus':
+      nodeColor = '#dbeafe'; // Light blue
+      borderColor = '#3b82f6'; // Blue
+      break;
+    case 'personal':
+      nodeColor = '#d1fae5'; // Light green (current personal graph color)
+      borderColor = '#10b981'; // Green
+      break;
+    default:
+      return; // No changes for unknown types
+  }
+  
+  nodes.forEach(node => {
+    node.style.fill = nodeColor;
+    node.style.stroke = borderColor;
+    node.style.strokeWidth = '2px';
+  });
 }
 
 // Helper function to count nodes in mermaid text
@@ -319,9 +358,9 @@ async function poll() {
   const { mermaid: mm } = data || {};
   if (mm) {
     await Promise.all([
-      showGraph(dgLoading, dgGraph, mm.dg, false), // Domain graph - no thumbnail
-      showGraph(sgLoading, sgGraph, mm.sg, false), // Syllabus graph - no thumbnail
-      showGraph(pgLoading, pgGraph, mm.pg, true)   // Personal graph - with thumbnail
+      showGraph(dgLoading, dgGraph, mm.dg, false, 'domain'), // Domain graph - no thumbnail, yellow nodes
+      showGraph(sgLoading, sgGraph, mm.sg, false, 'syllabus'), // Syllabus graph - no thumbnail, blue nodes
+      showGraph(pgLoading, pgGraph, mm.pg, false, 'personal')  // Personal graph - no thumbnail, green nodes
     ]);
   }
 
@@ -332,13 +371,13 @@ async function poll() {
 }
 
 // Modal functionality
-function openGraphModal(title, mermaidContent) {
+function openGraphModal(title, mermaidContent, graphType = null) {
   graphModalTitle.textContent = title;
   graphModal.classList.add('active');
   
   // Render the graph in the modal
   if (mermaidContent) {
-    renderModalGraph(mermaidContent);
+    renderModalGraph(mermaidContent, graphType);
   }
   
   // Prevent body scroll
@@ -359,7 +398,7 @@ function closeGraphModal() {
   resetGraphState();
 }
 
-async function renderModalGraph(mermaidContent) {
+async function renderModalGraph(mermaidContent, graphType = null) {
   const modalMermaid = interactiveGraph.querySelector('.mermaid');
   if (!modalMermaid) return;
   
@@ -400,6 +439,9 @@ async function renderModalGraph(mermaidContent) {
         text.style.fontSize = '12px';
         text.style.fontFamily = 'Inter, sans-serif';
       });
+      
+      // Apply graph-specific colors to modal graph
+      applyGraphTypeColors(svgElement, graphType);
     }
     
     // Setup interactive features after rendering
@@ -557,7 +599,7 @@ function addGraphClickHandlers() {
   if (dgCard) {
     dgCard.addEventListener('click', () => {
       if (lastData?.mermaid?.dg) {
-        openGraphModal('Domain Graph', lastData.mermaid.dg);
+        openGraphModal('Domain Graph', lastData.mermaid.dg, 'domain');
       }
     });
   }
@@ -565,7 +607,7 @@ function addGraphClickHandlers() {
   if (sgCard) {
     sgCard.addEventListener('click', () => {
       if (lastData?.mermaid?.sg) {
-        openGraphModal('Syllabus Graph', lastData.mermaid.sg);
+        openGraphModal('Syllabus Graph', lastData.mermaid.sg, 'syllabus');
       }
     });
   }
@@ -573,7 +615,7 @@ function addGraphClickHandlers() {
   if (pgCard) {
     pgCard.addEventListener('click', () => {
       if (lastData?.mermaid?.pg) {
-        openGraphModal('Personal Graph', lastData.mermaid.pg);
+        openGraphModal('Personal Graph', lastData.mermaid.pg, 'personal');
       }
     });
   }
