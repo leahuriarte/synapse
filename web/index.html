@@ -221,11 +221,17 @@
 
     .graph-content {
       position: relative;
-      min-height: 200px;
+      min-height: 300px;
       background: var(--bg-primary);
       border-radius: var(--radius-sm);
       padding: 16px;
-      overflow: hidden;
+      overflow: auto;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .graph-content:hover {
+      background: var(--bg-tertiary);
     }
 
     .loading-state {
@@ -473,11 +479,48 @@
     /* Mermaid overrides */
     .mermaid {
       background: transparent !important;
+      text-align: center;
+      overflow: auto;
     }
 
     .mermaid svg {
       max-width: 100% !important;
       height: auto !important;
+      background: transparent !important;
+    }
+
+    /* Mermaid dark theme styling */
+    .mermaid .node rect,
+    .mermaid .node circle,
+    .mermaid .node polygon {
+      fill: var(--bg-tertiary) !important;
+      stroke: var(--border-light) !important;
+      stroke-width: 2px !important;
+    }
+
+    .mermaid .node text {
+      fill: var(--text-primary) !important;
+      font-family: 'Inter', sans-serif !important;
+      font-weight: 500 !important;
+    }
+
+    .mermaid .edgePath path {
+      stroke: var(--border-light) !important;
+      stroke-width: 2px !important;
+    }
+
+    .mermaid .arrowheadPath {
+      fill: var(--border-light) !important;
+      stroke: var(--border-light) !important;
+    }
+
+    .mermaid .edgeLabel {
+      background-color: var(--bg-secondary) !important;
+      color: var(--text-secondary) !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 12px !important;
+      padding: 2px 6px !important;
+      border-radius: 4px !important;
     }
 
     /* Tooltips */
@@ -530,6 +573,128 @@
     .graph-card:focus {
       outline: 2px solid var(--primary);
       outline-offset: 2px;
+    }
+
+    /* Graph Modal/Overlay */
+    .graph-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+    }
+
+    .graph-modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeInModal 0.3s ease;
+    }
+
+    @keyframes fadeInModal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .graph-modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 90%;
+      height: 90%;
+      max-width: 1200px;
+      max-height: 800px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .graph-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .graph-modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .graph-modal-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 18px;
+    }
+
+    .graph-modal-close:hover {
+      background: var(--error);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .graph-modal-body {
+      flex: 1;
+      padding: 24px;
+      overflow: auto;
+      background: var(--bg-primary);
+    }
+
+    .graph-modal-graph {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .graph-modal-graph .mermaid {
+      width: 100%;
+      height: 100%;
+    }
+
+    .graph-modal-graph .mermaid svg {
+      width: 100% !important;
+      height: auto !important;
+      min-height: 100%;
+    }
+
+    /* Click to expand hint */
+    .graph-content::after {
+      content: "Click to expand";
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+
+    .graph-content:hover::after {
+      opacity: 1;
     }
 
     /* Loading state improvements */
@@ -657,6 +822,21 @@
         </div>
         <ol id="recs" class="recommendations-list" style="display: none;"></ol>
     </div>
+    </div>
+  </div>
+
+  <!-- Graph Modal -->
+  <div id="graph-modal" class="graph-modal">
+    <div class="graph-modal-content">
+      <div class="graph-modal-header">
+        <h3 id="graph-modal-title" class="graph-modal-title">Graph</h3>
+        <button id="graph-modal-close" class="graph-modal-close" title="Close">×</button>
+      </div>
+      <div class="graph-modal-body">
+        <div id="graph-modal-graph" class="graph-modal-graph">
+          <div class="mermaid"></div>
+        </div>
+      </div>
     </div>
   </div>
 

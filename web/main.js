@@ -6,7 +6,20 @@ mermaid.initialize({
   maxTextSize: 100000,
   flowchart: {
     useMaxWidth: true,
-    htmlLabels: true
+    htmlLabels: true,
+    curve: 'basis'
+  },
+  themeVariables: {
+    primaryColor: '#6366f1',
+    primaryTextColor: '#f8fafc',
+    primaryBorderColor: '#4f46e5',
+    lineColor: '#8b5cf6',
+    secondaryColor: '#1a1a2e',
+    tertiaryColor: '#16213e',
+    background: 'transparent',
+    mainBkg: '#1a1a2e',
+    secondBkg: '#16213e',
+    darkMode: true
   }
 });
 
@@ -34,6 +47,12 @@ const pgGraph = document.getElementById('pg');
 // Recommendations
 const recsEmpty = document.getElementById('recs-empty');
 const recsList = document.getElementById('recs');
+
+// Modal elements
+const graphModal = document.getElementById('graph-modal');
+const graphModalTitle = document.getElementById('graph-modal-title');
+const graphModalClose = document.getElementById('graph-modal-close');
+const graphModalGraph = document.getElementById('graph-modal-graph');
 
 // Animation utilities
 function fadeIn(element, duration = 300) {
@@ -96,10 +115,26 @@ function animateCount(element, newValue) {
   }
 }
 
-function showGraph(loadingElement, graphElement, mermaidContent) {
-  if (mermaidContent && mermaidContent !== 'graph TD; X["booting…"]') {
+async function showGraph(loadingElement, graphElement, mermaidContent) {
+  if (mermaidContent && mermaidContent !== 'graph TD; X["booting…"]' && mermaidContent.trim() !== '') {
     fadeOut(loadingElement);
-    graphElement.textContent = mermaidContent;
+    
+    // Clear previous content
+    graphElement.innerHTML = '';
+    
+    try {
+      // Generate unique ID for this render
+      const graphId = `graph-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Use mermaid.render to convert text to SVG
+      const { svg } = await mermaid.render(graphId, mermaidContent);
+      graphElement.innerHTML = svg;
+    } catch (error) {
+      console.warn('Mermaid render error:', error);
+      // Fallback to text display if rendering fails
+      graphElement.innerHTML = `<pre style="color: var(--text-muted); font-size: 12px; overflow: auto;">${mermaidContent}</pre>`;
+    }
+    
     fadeIn(graphElement);
   } else {
     fadeOut(graphElement);
@@ -169,28 +204,104 @@ async function poll() {
   // Update graphs
   const { mermaid: mm } = data || {};
   if (mm) {
-    showGraph(dgLoading, dgGraph, mm.dg);
-    showGraph(sgLoading, sgGraph, mm.sg);
-    showGraph(pgLoading, pgGraph, mm.pg);
+    await Promise.all([
+      showGraph(dgLoading, dgGraph, mm.dg),
+      showGraph(sgLoading, sgGraph, mm.sg),
+      showGraph(pgLoading, pgGraph, mm.pg)
+    ]);
   }
 
   // Update recommendations
   updateRecommendations(data.recommendations);
 
-  // Render Mermaid graphs
-  if (mm && (mm.dg || mm.sg || mm.pg)) {
-    try {
-      await mermaid.run({
-        nodes: ['#dg', '#sg', '#pg']
-          .filter(id => document.querySelector(id)?.textContent?.trim())
-          .map(id => ({ id, selector: id }))
-      });
-    } catch (e) {
-      console.warn('Mermaid render issue:', e?.message || e);
-    }
-  }
-
   lastData = data;
+}
+
+// Modal functionality
+function openGraphModal(title, mermaidContent) {
+  graphModalTitle.textContent = title;
+  graphModal.classList.add('active');
+  
+  // Render the graph in the modal
+  if (mermaidContent) {
+    renderModalGraph(mermaidContent);
+  }
+  
+  // Prevent body scroll
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGraphModal() {
+  graphModal.classList.remove('active');
+  document.body.style.overflow = '';
+  
+  // Clear modal content
+  const modalMermaid = graphModalGraph.querySelector('.mermaid');
+  if (modalMermaid) {
+    modalMermaid.innerHTML = '';
+  }
+}
+
+async function renderModalGraph(mermaidContent) {
+  const modalMermaid = graphModalGraph.querySelector('.mermaid');
+  if (!modalMermaid) return;
+  
+  try {
+    const graphId = `modal-graph-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const { svg } = await mermaid.render(graphId, mermaidContent);
+    modalMermaid.innerHTML = svg;
+  } catch (error) {
+    console.warn('Modal mermaid render error:', error);
+    modalMermaid.innerHTML = `<pre style="color: var(--text-muted); font-size: 14px; white-space: pre-wrap;">${mermaidContent}</pre>`;
+  }
+}
+
+// Event listeners
+graphModalClose.addEventListener('click', closeGraphModal);
+
+// Close modal on backdrop click
+graphModal.addEventListener('click', (e) => {
+  if (e.target === graphModal) {
+    closeGraphModal();
+  }
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && graphModal.classList.contains('active')) {
+    closeGraphModal();
+  }
+});
+
+// Add click handlers to graph cards
+function addGraphClickHandlers() {
+  const dgCard = document.querySelector('.graph-card:nth-child(1) .graph-content');
+  const sgCard = document.querySelector('.graph-card:nth-child(2) .graph-content');
+  const pgCard = document.querySelector('.graph-card:nth-child(3) .graph-content');
+  
+  if (dgCard) {
+    dgCard.addEventListener('click', () => {
+      if (lastData?.mermaid?.dg) {
+        openGraphModal('Domain Graph', lastData.mermaid.dg);
+      }
+    });
+  }
+  
+  if (sgCard) {
+    sgCard.addEventListener('click', () => {
+      if (lastData?.mermaid?.sg) {
+        openGraphModal('Syllabus Graph', lastData.mermaid.sg);
+      }
+    });
+  }
+  
+  if (pgCard) {
+    pgCard.addEventListener('click', () => {
+      if (lastData?.mermaid?.pg) {
+        openGraphModal('Personal Graph', lastData.mermaid.pg);
+      }
+    });
+  }
 }
 
 // Add pulse animation keyframes
@@ -207,3 +318,8 @@ document.head.appendChild(style);
 // Initialize
 poll();
 setInterval(poll, 3000);
+
+// Add click handlers after DOM is ready
+document.addEventListener('DOMContentLoaded', addGraphClickHandlers);
+// Also add handlers immediately in case DOM is already loaded
+addGraphClickHandlers();
