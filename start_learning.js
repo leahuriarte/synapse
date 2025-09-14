@@ -10,14 +10,32 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+let rl = null;
 
-function question(prompt) {
+// Only create readline interface if stdin is available and in a TTY
+function createReadlineInterface() {
+  try {
+    if (process.stdin.isTTY && !process.env.CI && !process.env.CLAUDE_CODE) {
+      rl = createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      return true;
+    }
+  } catch (error) {
+    console.log('⚠️  Interactive mode not available, using defaults');
+  }
+  return false;
+}
+
+function question(prompt, defaultValue = '') {
   return new Promise(resolve => {
-    rl.question(prompt, resolve);
+    if (rl) {
+      rl.question(prompt, resolve);
+    } else {
+      console.log(prompt + (defaultValue ? `[default: ${defaultValue}]` : '[skipped]'));
+      resolve(defaultValue);
+    }
   });
 }
 
@@ -107,6 +125,9 @@ async function setupLearningSession() {
   try {
     console.log('\n🎓 Welcome to Synapse Learning System!\n');
 
+    // Create readline interface if possible
+    const hasInteractiveMode = createReadlineInterface();
+
     // Check if server is already running
     let serverRunning = await checkServerHealth();
 
@@ -139,11 +160,15 @@ async function setupLearningSession() {
       process.exit(1);
     }
 
-    // Get subject from user
-    const subject = await question('📚 What subject would you like to learn? ');
+    // Get subject from command line args or user input
+    let subject = process.argv[2] || '';
     if (!subject.trim()) {
-      console.log('❌ Subject is required');
-      process.exit(1);
+      subject = await question('📚 What subject would you like to learn? ', 'discrete math and machine learning');
+    }
+
+    if (!subject.trim()) {
+      console.log('❌ Using default subject: discrete math and machine learning');
+      subject = 'discrete math and machine learning';
     }
 
     console.log(`\n🎯 Setting up learning session for: ${subject}\n`);
@@ -180,12 +205,14 @@ async function setupLearningSession() {
         });
         console.log(`${matchingCourses.length + 1}. None of these match / Use fallback`);
 
-        const selection = await question('\nSelect a course (number): ');
+        const selection = await question('\nSelect a course (number): ', '1');
         const index = parseInt(selection) - 1;
 
         if (index >= 0 && index < matchingCourses.length) {
           selectedCourseId = matchingCourses[index].id;
           console.log(`✅ Selected: ${matchingCourses[index].name}`);
+        } else {
+          console.log('📝 No course selected, using fallback syllabus');
         }
       } else {
         console.log('📝 No matching courses found, will use fallback syllabus');
@@ -239,7 +266,9 @@ async function setupLearningSession() {
     console.error('❌ Setup failed:', error.message);
     process.exit(1);
   } finally {
-    rl.close();
+    if (rl) {
+      rl.close();
+    }
   }
 }
 

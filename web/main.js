@@ -199,17 +199,14 @@ async function showGraph(loadingElement, graphElement, mermaidContent, showThumb
           const containerWidth = 450; // Container width
           const containerHeight = 450; // Container height
           
-          // Target a consistent scale that makes text approximately 12pt
-          // This ensures all graphs have similar readability regardless of size
-          const targetScale = 0.85; // Consistent scale for 12pt font equivalent
-          
-          // Calculate scale based on container, but prioritize consistency
+          // Calculate scale based on container, but prioritize readability
           const scaleX = containerWidth / originalWidth;
           const scaleY = containerHeight / originalHeight;
           const fitScale = Math.min(scaleX, scaleY);
-          
-          // Use target scale, but don't exceed container bounds
-          const optimalScale = Math.min(targetScale, fitScale);
+
+          // Use 4x larger scale for better readability
+          const targetScale = 3.5; // Increased for 4x zoom
+          const optimalScale = Math.min(targetScale, fitScale * 4); // Allow up to 4x the fit scale
           
           svgElement.style.transform = `scale(${optimalScale})`;
           svgElement.style.transformOrigin = 'center center';
@@ -250,6 +247,25 @@ async function showGraph(loadingElement, graphElement, mermaidContent, showThumb
 
         // Apply text wrapping, graph-specific colors, and cross-graph mastery to direct SVG
         const svgElement = graphWrapper.querySelector('svg');
+
+        // Scale up the SVG for better readability - much larger scale for domain/syllabus graphs
+        if (svgElement) {
+          const scaleValue = (graphType === 'domain' || graphType === 'syllabus') ? 10 : 4;
+          svgElement.style.transform = `scale(${scaleValue})`;
+          svgElement.style.transformOrigin = 'center center';
+          svgElement.style.maxWidth = 'none';
+          svgElement.style.maxHeight = 'none';
+          svgElement.style.width = 'auto';
+          svgElement.style.height = 'auto';
+        }
+
+        // Make sure the wrapper can accommodate the scaled content
+        graphWrapper.style.overflow = 'visible';
+        graphWrapper.style.width = 'auto';
+        graphWrapper.style.height = 'auto';
+        graphWrapper.style.minHeight = '500px';
+        graphWrapper.style.minWidth = '500px';
+
         wrapSVGText(svgElement, 16);
         applyGraphTypeColors(svgElement, graphType);
         applyCrossGraphMastery(svgElement, graphType, masteryData);
@@ -953,6 +969,20 @@ function formatDueDate(dueDate) {
   });
 }
 
+function formatDueDateWithDays(dueDate) {
+  const date = new Date(dueDate);
+  const now = new Date();
+  const daysUntilDue = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+
+  if (daysUntilDue < 0) {
+    const daysOverdue = Math.abs(daysUntilDue);
+    return `Overdue by ${daysOverdue} day${daysOverdue === 1 ? '' : 's'}`;
+  }
+  if (daysUntilDue === 0) return 'Due today';
+  if (daysUntilDue === 1) return 'Due tomorrow';
+  return `${daysUntilDue} day${daysUntilDue === 1 ? '' : 's'} left`;
+}
+
 async function loadAssignments() {
   try {
     console.log('Loading assignments...');
@@ -1007,7 +1037,7 @@ async function loadAssignments() {
               <div class="assignment-meta-row">
                 <div class="assignment-due">
                   <span class="due-label">Due:</span>
-                  <span class="due-date ${assignment.urgency}">${formatDate(dueDate)} (${assignment.daysUntilDue} days)</span>
+                  <span class="due-date">${formatDate(dueDate)}</span>
                 </div>
                 <div class="assignment-time">
                   <span class="time-label">Est. Time:</span>

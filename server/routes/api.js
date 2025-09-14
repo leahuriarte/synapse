@@ -340,15 +340,21 @@ router.get('/api/learning-gaps', (req, res) => {
       upcomingAssignments.push(
         {
           id: 'assignment_1',
-          title: 'Machine Learning Fundamentals Quiz',
+          title: 'Set Theory and Logic Fundamentals',
           dueDate: '2024-09-20T23:59:00Z',
-          relatedConcepts: ['supervised learning', 'linear regression', 'classification']
+          relatedConcepts: ['set theory', 'logic', 'proofs']
         },
         {
           id: 'assignment_2',
-          title: 'Linear Regression Implementation',
+          title: 'Graph Theory Problems',
           dueDate: '2024-09-25T23:59:00Z',
-          relatedConcepts: ['linear regression', 'gradient descent', 'python programming']
+          relatedConcepts: ['graph theory', 'combinatorics', 'discrete structures']
+        },
+        {
+          id: 'assignment_3',
+          title: 'Probability and Combinatorics Quiz',
+          dueDate: '2024-09-30T23:59:00Z',
+          relatedConcepts: ['discrete probability', 'combinatorics', 'counting principles']
         }
       );
     }
@@ -887,122 +893,123 @@ router.get('/api/assignments', (req, res) => {
     const { status } = req.query;
     const db = getDB();
 
-    // Enhanced sample data with more realistic assignment names and better integration
+    // Enhanced sample data with discrete math themed assignments
     const sampleAssignments = [
       {
-        id: 'cs229_hw1',
-        title: 'Homework 1: Supervised Learning Foundations',
-        fullTitle: 'CS 229 Homework 1: Linear Regression and Logistic Regression Implementation',
-        course: 'CS 229 - Machine Learning',
+        id: 'math240_hw1',
+        title: 'Homework 1: Set Theory Fundamentals',
+        fullTitle: 'MATH 240 Homework 1: Set Operations and Logic Proofs',
+        course: 'MATH 240 - Discrete Mathematics',
         category: 'homework',
         dueDate: '2024-09-20T23:59:00Z',
         status: 'pending',
-        description: 'Implement linear and logistic regression from scratch. Analyze performance on real datasets.',
-        instructions: 'Complete problems 1-4 in the homework PDF. Submit Python notebook with implementations and analysis.',
+        description: 'Practice set operations, Venn diagrams, and basic proof techniques including direct proof and proof by contradiction.',
+        instructions: 'Complete problems 1-6 in Chapter 1. Show all work clearly and write proofs using proper mathematical notation.',
         points: 100,
         submissionType: 'online_upload',
-        canvasUrl: 'https://canvas.stanford.edu/courses/cs229/assignments/hw1',
-        estimatedTime: '8-12 hours',
+        canvasUrl: 'https://canvas.university.edu/courses/math240/assignments/hw1',
+        estimatedTime: '6-8 hours',
         difficulty: 'medium',
-        relatedConcepts: ['supervised learning', 'linear regression', 'logistic regression', 'gradient descent', 'cost functions'],
-        prerequisites: ['linear algebra', 'calculus', 'python programming'],
+        relatedConcepts: ['set theory', 'logic', 'proofs', 'set operations', 'venn diagrams'],
+        prerequisites: ['high school algebra', 'basic logic'],
         resources: [
-          'Lecture slides 1-3',
-          'Andrew Ng\'s ML Course videos',
-          'NumPy documentation'
+          'Discrete Mathematics textbook Chapter 1',
+          'Proof writing guide',
+          'Set theory notation reference'
         ]
       },
       {
-        id: 'cs229_quiz2',
-        title: 'Quiz 2: Neural Networks and Deep Learning',
-        fullTitle: 'CS 229 Quiz 2: Neural Network Fundamentals and Backpropagation',
-        course: 'CS 229 - Machine Learning',
+        id: 'math240_quiz1',
+        title: 'Quiz 1: Graph Theory Basics',
+        fullTitle: 'MATH 240 Quiz 1: Graph Theory Fundamentals and Applications',
+        course: 'MATH 240 - Discrete Mathematics',
         category: 'quiz',
         dueDate: '2024-09-25T14:30:00Z',
         status: 'pending',
-        description: 'Timed quiz covering neural network architectures, activation functions, and backpropagation algorithm.',
-        instructions: '60-minute online quiz. Multiple choice and short answer questions.',
+        description: 'Timed quiz covering graph terminology, graph types, and basic algorithms like DFS and BFS.',
+        instructions: '45-minute online quiz. Multiple choice and short answer questions about graph properties.',
         points: 75,
         submissionType: 'online_quiz',
-        canvasUrl: 'https://canvas.stanford.edu/courses/cs229/quizzes/quiz2',
-        estimatedTime: '2-3 hours prep + 1 hour quiz',
-        difficulty: 'high',
-        relatedConcepts: ['neural networks', 'backpropagation', 'activation functions', 'deep learning', 'feedforward networks'],
-        prerequisites: ['linear regression', 'calculus derivatives', 'chain rule'],
+        canvasUrl: 'https://canvas.university.edu/courses/math240/quizzes/quiz1',
+        estimatedTime: '3-4 hours prep + 45 min quiz',
+        difficulty: 'medium',
+        relatedConcepts: ['graph theory', 'vertices', 'edges', 'paths', 'cycles', 'graph algorithms'],
+        prerequisites: ['set theory', 'basic combinatorics'],
         resources: [
-          'Lecture slides 4-6',
-          '3Blue1Brown Neural Networks series',
-          'Deep Learning book chapters 6-7'
+          'Graph theory chapter in textbook',
+          'Graph visualization tools',
+          'Practice problems from homework'
         ]
       },
       {
-        id: 'cs229_project1',
-        title: 'Project 1: ML Classification Challenge',
-        fullTitle: 'CS 229 Project 1: Multi-class Classification on Real-world Dataset',
-        course: 'CS 229 - Machine Learning',
+        id: 'math240_project1',
+        title: 'Project 1: Combinatorics Applications',
+        fullTitle: 'MATH 240 Project 1: Real-world Combinatorics Problem Solving',
+        course: 'MATH 240 - Discrete Mathematics',
         category: 'project',
         dueDate: '2024-10-05T23:59:00Z',
         status: 'pending',
-        description: 'Apply multiple classification algorithms to a provided dataset. Compare performance and analyze results.',
-        instructions: 'Form teams of 2-3. Choose dataset from provided options. Implement at least 3 different algorithms.',
+        description: 'Apply combinatorial methods to solve real-world counting problems. Explore permutations, combinations, and probability.',
+        instructions: 'Work in pairs. Choose from provided scenarios. Present solution with detailed mathematical reasoning.',
         points: 150,
         submissionType: 'online_upload',
-        canvasUrl: 'https://canvas.stanford.edu/courses/cs229/assignments/project1',
-        estimatedTime: '15-20 hours',
+        canvasUrl: 'https://canvas.university.edu/courses/math240/assignments/project1',
+        estimatedTime: '12-15 hours',
         difficulty: 'high',
-        relatedConcepts: ['classification', 'support vector machines', 'decision trees', 'ensemble methods', 'cross validation'],
-        prerequisites: ['supervised learning', 'python programming', 'data preprocessing'],
+        relatedConcepts: ['combinatorics', 'permutations', 'combinations', 'counting principles', 'discrete probability'],
+        prerequisites: ['set theory', 'basic algebra', 'proof techniques'],
         resources: [
-          'Project guidelines PDF',
-          'Scikit-learn documentation',
-          'Kaggle Learn courses'
+          'Combinatorics project guidelines',
+          'Counting principles reference',
+          'Probability applications examples'
         ]
       },
       {
-        id: 'cs229_hw0',
-        title: 'Homework 0: Mathematical Prerequisites',
-        fullTitle: 'CS 229 Homework 0: Linear Algebra and Probability Review',
-        course: 'CS 229 - Machine Learning',
+        id: 'math240_hw0',
+        title: 'Homework 0: Logic and Proof Foundations',
+        fullTitle: 'MATH 240 Homework 0: Logic Review and Basic Proof Techniques',
+        course: 'MATH 240 - Discrete Mathematics',
         category: 'homework',
         dueDate: '2024-09-08T23:59:00Z',
         status: 'completed',
-        description: 'Review of essential mathematical concepts: linear algebra, probability, and calculus.',
-        instructions: 'Complete all problems in the math review worksheet. Show your work clearly.',
+        description: 'Review of logical reasoning, truth tables, and introduction to mathematical proof writing.',
+        instructions: 'Complete all logic problems and write two simple proofs. Show logical reasoning clearly.',
         points: 50,
         grade: 47,
         submissionType: 'online_upload',
-        canvasUrl: 'https://canvas.stanford.edu/courses/cs229/assignments/hw0',
+        canvasUrl: 'https://canvas.university.edu/courses/math240/assignments/hw0',
         estimatedTime: '4-6 hours',
-        difficulty: 'medium',
-        relatedConcepts: ['linear algebra', 'probability', 'calculus', 'statistics'],
-        prerequisites: ['high school algebra', 'basic calculus'],
+        difficulty: 'easy',
+        relatedConcepts: ['logic', 'proofs', 'truth tables', 'logical operators'],
+        prerequisites: ['high school algebra', 'basic reasoning'],
         resources: [
-          'Math review handout',
-          'Khan Academy linear algebra',
-          'CS229 math notes'
+          'Logic review handout',
+          'Proof writing guide',
+          'Truth table generator'
         ]
       },
       {
-        id: 'cs229_midterm',
+        id: 'math240_midterm',
         title: 'Midterm Exam',
-        fullTitle: 'CS 229 Midterm Examination: Comprehensive ML Fundamentals',
-        course: 'CS 229 - Machine Learning',
+        fullTitle: 'MATH 240 Midterm Examination: Discrete Mathematics Fundamentals',
+        course: 'MATH 240 - Discrete Mathematics',
         category: 'exam',
         dueDate: '2024-10-15T16:30:00Z',
         status: 'pending',
-        description: 'Comprehensive exam covering all material from weeks 1-6. Mix of theoretical and practical questions.',
-        instructions: 'In-person exam in Hewlett 200. Bring calculator and student ID. No notes allowed.',
+        description: 'Comprehensive exam covering logic, set theory, proof techniques, and basic combinatorics.',
+        instructions: 'In-person exam in Mathematics Building Room 101. Bring pencils and student ID. No calculators.',
         points: 200,
         submissionType: 'in_person',
-        canvasUrl: 'https://canvas.stanford.edu/courses/cs229/assignments/midterm',
-        estimatedTime: '10-15 hours prep + 2 hour exam',
+        canvasUrl: 'https://canvas.university.edu/courses/math240/assignments/midterm',
+        estimatedTime: '12-18 hours prep + 2 hour exam',
         difficulty: 'high',
-        relatedConcepts: ['supervised learning', 'unsupervised learning', 'neural networks', 'svm', 'bias variance tradeoff'],
-        prerequisites: ['all previous homework', 'lecture attendance', 'section participation'],
+        relatedConcepts: ['logic', 'set theory', 'proofs', 'combinatorics', 'number theory', 'graph theory'],
+        prerequisites: ['all previous homework', 'lecture attendance', 'quiz completion'],
         resources: [
-          'All lecture slides',
-          'Previous years\' exams',
-          'Office hours review sessions'
+          'All lecture notes',
+          'Textbook chapters 1-4',
+          'Practice exam problems',
+          'Study group sessions'
         ]
       }
     ];
