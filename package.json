@@ -1,0 +1,27 @@
+{
+  "name": "synapse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server/index.js",
+    "start": "node server/index.js",
+    "db:migrate": "node db/migrate.js",
+    "db:seed": "node db/seed.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.60.0",
+    "@google/generative-ai": "^0.24.1",
+    "better-sqlite3": "^9.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-html-parser": "^6.1.12",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=22 <23"
+  }
+}
